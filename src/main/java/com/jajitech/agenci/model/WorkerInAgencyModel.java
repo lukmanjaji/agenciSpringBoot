@@ -18,11 +18,11 @@ import org.hibernate.annotations.CreationTimestamp;
 
 /**
  *
- * @author Lukman Jaji Name <lukman@lukmanjaji.com>
+ * @author Lukman Jaji <lukman@lukmanjaji.com>
  */
 @Entity
 @Table(name = "sn_agency")
-public class WorkerInAgency implements Serializable {
+public class WorkerInAgencyModel implements Serializable {
     
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

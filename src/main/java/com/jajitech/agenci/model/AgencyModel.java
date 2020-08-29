@@ -18,7 +18,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 /**
  *
- * @author Lukman Jaji Name <lukman@lukmanjaji.com>
+ * @author Lukman Jaji <lukman@lukmanjaji.com>
  */
 @Entity
 @Table(name = "agency")
@@ -42,8 +42,20 @@ public class AgencyModel implements Serializable {
     @Column(name = "a_email")
     String agencyEmail;
     
+    @Column(name = "a_phone")
+    String agencyPhone;
+    
     @Column(name = "isLogo")
     boolean isLogoUploaded;
+
+    public String getAgencyPhone() {
+        return agencyPhone;
+    }
+
+    public void setAgencyPhone(String agencyPhone) {
+        this.agencyPhone = agencyPhone;
+    }
+    
 
     public String getAgencyEmail() {
         return agencyEmail;
