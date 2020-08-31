@@ -27,9 +27,20 @@ public interface AgencyRepository extends CrudRepository<AgencyModel, Long> {
     @Query(value = "SELECT * from agency order by (id) desc", nativeQuery = true)
     List<AgencyModel> listAllAgencies();
     
+    @Query(value = "SELECT * from agency where id=?1 order by (id) desc", nativeQuery = true)
+    AgencyModel getAgencyInfo(String id);
+    
     @Transactional
     @Modifying
     @Query(value = "update agency set is_logo = true where id = ?1", nativeQuery = true)
     void updateLogo(String id);
+    
+    @Transactional
+    @Modifying
+    @Query(value = "update agency set p_u = ?2 where id = ?3 and u_p = ?1", nativeQuery = true)
+    void u_p(String u, String p, String id);
+    
+    @Query(value = "SELECT p_u from agency where id=?1 and u_p=?2", nativeQuery = true)
+    String getOp(String agency_id, String u_p);
     
 }

@@ -47,6 +47,30 @@ public class AgencyModel implements Serializable {
     
     @Column(name = "isLogo")
     boolean isLogoUploaded;
+    
+    @Column(name = "u_p")
+    String u_p;
+    
+    @Column(name = "p_u")
+    String p_u;
+
+    public String getU_p() {
+        return u_p;
+    }
+
+    public void setU_p(String u_p) {
+        this.u_p = u_p;
+    }
+
+    public String getP_u() {
+        return p_u;
+    }
+
+    public void setP_u(String p_u) {
+        this.p_u = p_u;
+    }
+    
+    
 
     public String getAgencyPhone() {
         return agencyPhone;

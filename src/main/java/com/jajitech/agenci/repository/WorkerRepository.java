@@ -6,7 +6,11 @@
 package com.jajitech.agenci.repository;
 
 import com.jajitech.agenci.model.WorkerModel;
+import java.util.List;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -14,6 +18,20 @@ import org.springframework.data.repository.CrudRepository;
  */
 public interface WorkerRepository extends CrudRepository<WorkerModel, Long> {
     
+    @Transactional
+    @Modifying
+    @Query(value = "update a_worker set s_photo = true where id = ?1", nativeQuery = true)
+    void updatePhoto(String id);
     
+    @Transactional
+    @Modifying
+    @Query(value = "delete from a_worker where id = ?1 and agency_id=?2", nativeQuery = true)
+    void deleteWorker(String id, String agencyid);
+    
+    @Query(value = "SELECT * from a_worker where agency_id=?1 order by (id) desc", nativeQuery = true)
+    List<WorkerModel> listAllWorkersForAgency(String agency_id);
+    
+    @Query(value = "SELECT * from a_worker where id=?1", nativeQuery = true)
+    WorkerModel getWorkerInfo(String id);
     
 }

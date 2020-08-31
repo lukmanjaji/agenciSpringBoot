@@ -5,6 +5,7 @@
  */
 package com.jajitech.agenci.helper;
 
+import com.google.gson.Gson;
 import com.jajitech.agenci.exception.MyFileNotFoundException;
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +23,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,13 +38,17 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileUploadManager {
     
     String path = "";
+    Gson gson = new Gson();
+    
+    @Autowired
+    ResponseParser parser;
     
     public FileUploadManager()
     {
         path = System.getProperty("user.dir")+"/agenciFiles/";
     }
     
-    public boolean doUpload(String type, MultipartFile toUpload)
+    public boolean doUpload(String type, MultipartFile toUpload, String id)
     {
         boolean success = false;
         File f = new File(path +type + "/");
@@ -50,7 +58,8 @@ public class FileUploadManager {
         }
         try
         {
-            File file = new File(path + "/"+type + "/" +toUpload.getOriginalFilename());
+            File file = new File(path + "/"+type + "/" +id+".jpg");
+            System.out.println(file.getAbsolutePath());
             toUpload.transferTo(file);
             success = true;
         }
@@ -74,6 +83,22 @@ public class FileUploadManager {
             }
         } catch (MalformedURLException ex) {
             throw new MyFileNotFoundException("File not found " + fileName, ex);
+        }
+    }
+    
+    @GetMapping("/upload/update/")
+    public String updateImage(@RequestParam("type") String type,
+            @RequestParam("id") String id,
+            @RequestParam("toUpload") MultipartFile toUpload)
+    {
+        boolean x = doUpload(type, toUpload, id);
+        if(x == true)
+        {
+            return gson.toJson(parser.parseResponse("photo_update", "Photo uploaded successfully"));
+        }
+        else
+        {
+            return gson.toJson(parser.parseResponse("photo_update", "Error uploading photo"));
         }
     }
     

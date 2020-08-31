@@ -48,9 +48,44 @@ public class WorkerModel implements Serializable {
     @Column(name = "s_photo")
     boolean isPhotoUploaded;
     
+    @Column(name="id_type")
+    String idType;
+    
+    @Column(name="id_number")
+    String idNumber;
+    
+    @Column(name="agency_id")
+    String agencyID;
+    
     @Column(name = "s_dob")
     @Temporal(javax.persistence.TemporalType.DATE)
     private Date dob;
+
+    public String getAgencyID() {
+        return agencyID;
+    }
+
+    public void setAgencyID(String agencyID) {
+        this.agencyID = agencyID;
+    }
+    
+    
+
+    public String getIdType() {
+        return idType;
+    }
+
+    public void setIdType(String idType) {
+        this.idType = idType;
+    }
+
+    public String getIdNumber() {
+        return idNumber;
+    }
+
+    public void setIdNumber(String idNumber) {
+        this.idNumber = idNumber;
+    }
 
     public Long getId() {
         return id;

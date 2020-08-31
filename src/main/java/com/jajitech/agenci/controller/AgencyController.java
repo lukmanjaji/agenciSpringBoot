@@ -7,6 +7,7 @@ package com.jajitech.agenci.controller;
 
 import com.google.gson.Gson;
 import com.jajitech.agenci.helper.FileUploadManager;
+import com.jajitech.agenci.helper.Hasher;
 import com.jajitech.agenci.helper.ResponseParser;
 import com.jajitech.agenci.model.AgencyModel;
 import com.jajitech.agenci.repository.AgencyRepository;
@@ -37,13 +38,20 @@ public class AgencyController {
     @Autowired
     ResponseParser parser;
     
+    @Autowired
+    Hasher hasher;
+    
     Gson gson = new Gson();
     String actionMessage = "";
     
     @PostMapping(path="save")
     public String save(@RequestParam("name") String name, @RequestParam("email") String email, 
-            @RequestParam("address") String address, @RequestParam("phone") String phone, @RequestParam("photoFile") MultipartFile photoFile)
+            @RequestParam("address") String address, @RequestParam("phone") String phone, 
+            @RequestParam("photoFile") MultipartFile photoFile,
+            @RequestParam("u") String u,
+            @RequestParam("p") String p)
     {
+        actionMessage = "";
         AgencyModel am = new AgencyModel();
         String savedID = "";
         boolean success = false;
@@ -52,6 +60,8 @@ public class AgencyController {
         am.setAgencyAddress(address);
         am.setAgencyPhone(phone);
         am.setIsLogoUploaded(false);
+        am.setU_p(u);
+        try{am.setP_u(hasher.hashPassword(p));}catch(Exception er){}
         try
         {
             AgencyModel ag = agency.save(am);
@@ -61,7 +71,7 @@ public class AgencyController {
         }catch(Exception er){actionMessage = "Agency NOT registered.";}
         if(success == true && photoFile != null)
         {
-            boolean uploaded = uploader.doUpload("logo", photoFile);
+            boolean uploaded = uploader.doUpload("logo", photoFile, savedID);
             if(uploaded == true)
             {
                 agency.updateLogo(savedID);
@@ -89,6 +99,47 @@ public class AgencyController {
         return s;
     }
     
+    @GetMapping(path="getAgencyInfo")
+    public String getWorkerInfo(@RequestParam("agency_id") String agency_id)
+    {
+        return gson.toJson(agency.findById(Long.parseLong(agency_id)));
+    }
+    
+    @PostMapping("updateCredentials")
+    public String u_p(@RequestParam("u") String u, @RequestParam("p") String p,
+    @RequestParam("op") String op,
+    @RequestParam("agency_id") String agency_id)
+    {
+        try
+        {
+            String x = agency.getOp(agency_id, u);
+            if( x != null)
+            {
+                System.out.println("this is op "+x);
+                boolean m = hasher.verifyHash(op, x);
+                if(m == false)
+                {
+                    actionMessage = "Invalid credentials";
+                }
+                else
+                {
+                    agency.u_p(u, hasher.hashPassword(p), agency_id);
+                    actionMessage = "Credentials updated.";
+                }
+            }
+            else
+            {
+                actionMessage = "Invalid credentials";
+            }
+        }
+        catch(Exception er)
+        {
+            actionMessage = "Error updating credentials.";
+            er.printStackTrace();
+        }
+        return gson.toJson(parser.parseResponse("updating_cred", actionMessage));
+    }
+     
     
 
     
