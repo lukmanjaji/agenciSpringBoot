@@ -79,7 +79,6 @@ public class Emailer {
             ClassPathResource r = new ClassPathResource("logo.png");
             mh.addInline("logo", r);
             sender.send(m);
-            System.out.println("I just sent an email");
             return true;
         }
         catch(Exception er)
