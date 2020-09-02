@@ -51,10 +51,17 @@ public class WorkerController {
             @RequestParam("address") String address, @RequestParam("phone") String phone, 
             @RequestParam("photoFile") MultipartFile photoFile, @RequestParam("idtype") String idtype,
             @RequestParam("idnumber") String idnumber,
-            @RequestParam("dob") String dob, @RequestParam("agencyid") String agencyid)
+            @RequestParam("dob") String dob)
     {
+        actionMessage = "";
+        boolean g =  workers.existsByEmail(email);
+        if(g == true)
+        {
+            return gson.toJson(parser.parseResponse("worker_reg", "A worker with the provided email already exists."));
+        }
+        
         WorkerModel worker = new WorkerModel();
-        try{Date date1=new SimpleDateFormat("dd/MM/yyyy").parse(dob); 
+        try{Date date1=new SimpleDateFormat("dd/MM/yyyy").parse(dob);
         worker.setDob(date1);}catch(Exception er){}
         worker.setIdNumber(idnumber);
         worker.setIdType(idtype);
@@ -63,7 +70,7 @@ public class WorkerController {
         worker.setWorkerEmail(email);
         worker.setWorkerPhone(phone);
         worker.setWorkerName(name);
-        worker.setAgencyID(agencyid);
+        worker.setAgencyID("");
         boolean success = false;
         try
         {
@@ -76,7 +83,7 @@ public class WorkerController {
         if(success == true)
         {
             System.out.println("its true o");
-            String r = mailer.sendVerificationCode(agencyid, savedID);
+            String r = mailer.sendVerificationCodeForWorker(savedID);
         }
         if(success == true && photoFile != null)
         {

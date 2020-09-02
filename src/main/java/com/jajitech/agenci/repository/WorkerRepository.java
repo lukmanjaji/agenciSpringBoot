@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -33,5 +34,11 @@ public interface WorkerRepository extends CrudRepository<WorkerModel, Long> {
     
     @Query(value = "SELECT * from a_worker where id=?1", nativeQuery = true)
     WorkerModel getWorkerInfo(String id);
+    
+    @Query(value = "SELECT id from a_worker where s_email=?1", nativeQuery = true)
+    String verifyWorkerEmail(String email);
+    
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM WorkerModel c WHERE c.workerEmail = :email")
+    boolean existsByEmail(@Param("email") String email);
     
 }

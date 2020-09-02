@@ -37,10 +37,13 @@ public interface AgencyRepository extends CrudRepository<AgencyModel, Long> {
     
     @Transactional
     @Modifying
-    @Query(value = "update agency set p_u = ?2 where id = ?3 and u_p = ?1", nativeQuery = true)
+    @Query(value = "update agency set p_u = ?2 where id = ?3 and email = ?1", nativeQuery = true)
     void u_p(String u, String p, String id);
     
-    @Query(value = "SELECT p_u from agency where id=?1 and u_p=?2", nativeQuery = true)
+    @Query(value = "SELECT p_u from agency where id=?1 and email=?2", nativeQuery = true)
     String getOp(String agency_id, String u_p);
+    
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM AgencyModel c WHERE c.agencyEmail = :email")
+    boolean existsByEmail(@Param("email") String email);
     
 }

@@ -20,10 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 public interface VerifyWorkerForAgencyRepository extends CrudRepository<VerifyWorkerForAgencyModel, Long> {
     
     @Query(value = "SELECT * from s_verify where v_code=?1 and s_code=?2 and ag_code=?3", nativeQuery = true)
-    List<VerifyWorkerForAgencyModel> veryfiyWorkerCode(String v_code, String s_code, String ag_code);
+    String veryfiyWorkerCode(String v_code, String s_code, String ag_code);
     
     @Transactional
     @Modifying
     @Query(value = "update s_verify set s_verified = true where v_code=?1 and s_code=?2 and ag_code=?3", nativeQuery = true)
     void verifyWorker(String v_code, String s_code, String ag_code);
+    
+    
 }

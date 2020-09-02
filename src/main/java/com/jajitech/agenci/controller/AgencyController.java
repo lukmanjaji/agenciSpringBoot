@@ -48,9 +48,14 @@ public class AgencyController {
     public String save(@RequestParam("name") String name, @RequestParam("email") String email, 
             @RequestParam("address") String address, @RequestParam("phone") String phone, 
             @RequestParam("photoFile") MultipartFile photoFile,
-            @RequestParam("u") String u,
             @RequestParam("p") String p)
     {
+        boolean b = agency.existsByEmail(email);
+        if(b == true)
+        {
+            return gson.toJson(parser.parseResponse("agency_registration", "Email already exists"));
+        }
+        
         actionMessage = "";
         AgencyModel am = new AgencyModel();
         String savedID = "";
@@ -60,7 +65,7 @@ public class AgencyController {
         am.setAgencyAddress(address);
         am.setAgencyPhone(phone);
         am.setIsLogoUploaded(false);
-        am.setU_p(u);
+        am.setU_p("");
         try{am.setP_u(hasher.hashPassword(p));}catch(Exception er){}
         try
         {
