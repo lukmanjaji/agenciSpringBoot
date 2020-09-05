@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.jajitech.agenci.controller;
+package com.jajitech.agenci.helper;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

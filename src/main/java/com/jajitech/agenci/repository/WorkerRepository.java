@@ -35,10 +35,29 @@ public interface WorkerRepository extends CrudRepository<WorkerModel, Long> {
     @Query(value = "SELECT * from a_worker where id=?1", nativeQuery = true)
     WorkerModel getWorkerInfo(String id);
     
+    @Query(value = "SELECT * from a_worker where s_email=?1", nativeQuery = true)
+    WorkerModel findByEmail(String email);
+    
+    
     @Query(value = "SELECT id from a_worker where s_email=?1", nativeQuery = true)
     String verifyWorkerEmail(String email);
     
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM WorkerModel c WHERE c.workerEmail = :email")
     boolean existsByEmail(@Param("email") String email);
+    
+    @Query(value = "SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM"
+            + " VerifyWorkerForAgencyModel c where c.verificationCode = :v_code "
+            + "and c.workerID = :s_code")
+    boolean veryfiyWorkerCode(String v_code, String s_code);
+    
+    @Transactional
+    @Modifying
+    @Query(value = "update s_verify set s_verified = true where v_code=?1 and s_code=?2 and s_verified = false", nativeQuery = true)
+    int verifyWorker(String v_code, String s_code);
+    
+    @Transactional
+    @Modifying
+    @Query(value = "update a_worker set agency_id = ?1 where id = ?2", nativeQuery = true)
+    int u_p(String p, String id);
     
 }

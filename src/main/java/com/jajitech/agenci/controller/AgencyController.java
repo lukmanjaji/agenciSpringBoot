@@ -53,7 +53,7 @@ public class AgencyController {
         boolean b = agency.existsByEmail(email);
         if(b == true)
         {
-            return gson.toJson(parser.parseResponse("agency_registration", "Email already exists"));
+            return gson.toJson(parser.parseResponse("agency_registration", "Email already exists."));
         }
         
         actionMessage = "";

@@ -6,6 +6,7 @@
 package com.jajitech.agenci.controller;
 
 import com.jajitech.agenci.helper.Emailer;
+import com.jajitech.agenci.model.WorkerModel;
 import com.jajitech.agenci.repository.VerifyWorkerForAgencyRepository;
 import com.jajitech.agenci.repository.WorkerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Lukman Jaji <lukman@lukmanjaji.com>
  */
 @RestController
-@RequestMapping("/agenci/worker/verify/")
+@RequestMapping("/agenci/worker/")
 public class VerifyWorkerForAgencyController {
     
     @Autowired
@@ -31,36 +32,67 @@ public class VerifyWorkerForAgencyController {
     @Autowired
     WorkerRepository worker;
     
-    @PostMapping(path="verifyWorker")
-    public boolean verifyWorker(@RequestParam("workerId") String workerId,
+    @Autowired
+    WorkerInAgencyController wagency;
+    
+    @PostMapping(path="verifyWorkerForAgency")
+    public boolean verifyWorkerForAgency(@RequestParam("workerId") String workerId,
             @RequestParam("agencyId") String agencyId,
             @RequestParam("code") String code)
     {
-        String verifyWorkerCode = verify.veryfiyWorkerCode(code, workerId, agencyId);
-        if(verifyWorkerCode != null && verifyWorkerCode.length() > 0)
+        boolean verifyWorkerCode = verify.veryfiyWorkerCode(code, workerId, agencyId);
+        if(verifyWorkerCode == true)
         {
-            verify.verifyWorker(code, workerId, agencyId);
+            int x = verify.verifyWorker(code, workerId, agencyId);
+            if(x > 0)
+            {
+                boolean y = wagency.save(agencyId, workerId);
+                if(y == true)
+                {
+                    mailer.sendInfoEmail("post_agency_verify", workerId, agencyId);
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+        return false;
+    }
+    
+    @PostMapping(path="sendAgencyVerification")
+    public boolean sendVerificationForWorker(@RequestParam("email") String email,
+            @RequestParam("agencyId") String agencyId)
+    {
+        try
+        {
+        boolean workerId = worker.existsByEmail(email);
+        System.out.println(workerId);
+        if(workerId == true)
+        {
+            WorkerModel id = worker.findByEmail(email);
+            boolean x = verify.workerExistsForAgency(""+id.getId(), agencyId);
+            if(x == true)
+            {
+                System.out.println("User already exists");
+                return false;
+            }
+            mailer.sendVerificationCodeForAgencyWorker(agencyId, ""+id.getId());
             return true;
         }
         else
         {
             return false;
         }
-    }
-    
-    @PostMapping(path="sendVerificationForWorker")
-    public boolean sendVerificationForWorker(@RequestParam("email") String email,
-            @RequestParam("agencyId") String agencyId)
-    {
-        String workerId = worker.verifyWorkerEmail(email);
-        System.out.println(workerId);
-        if(workerId != null && workerId.length() > 0)
-        {
-            mailer.sendVerificationCodeForAgencyWorker(agencyId, workerId);
-            return true;
         }
-        else
+        catch(Exception er)
         {
+            er.printStackTrace();
             return false;
         }
     }

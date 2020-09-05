@@ -8,6 +8,7 @@ package com.jajitech.agenci.controller;
 import com.google.gson.Gson;
 import com.jajitech.agenci.helper.Emailer;
 import com.jajitech.agenci.helper.FileUploadManager;
+import com.jajitech.agenci.helper.Hasher;
 import com.jajitech.agenci.helper.ResponseParser;
 import com.jajitech.agenci.model.WorkerModel;
 import com.jajitech.agenci.repository.WorkerRepository;
@@ -45,6 +46,9 @@ public class WorkerController {
     
     @Autowired
     ResponseParser parser;
+    
+    @Autowired
+    Hasher hasher;
     
     @PostMapping(path="addWorker")
     public String save(@RequestParam("name") String name, @RequestParam("email") String email, 
@@ -102,6 +106,24 @@ public class WorkerController {
         return "";
     }
     
+    @PostMapping("setUp")
+    public boolean setUp(@RequestParam("workerId") String workerId,@RequestParam("p") String p)
+    {
+        WorkerModel wm = new WorkerModel();
+        
+        try{p = hasher.hashPassword(p);}catch(Exception er){}
+        int x = workers.u_p(p, workerId);
+        if(x > 0)
+        {
+            System.out.println("credentials updated");
+            return true;
+        }
+        else
+        {
+            System.out.println("error updating credentials for worker");
+            return false;
+        }
+    }
     
     @PostMapping(path="updateWorker")
     public String update(@RequestParam("name") String name, @RequestParam("email") String email, 
@@ -156,6 +178,31 @@ public class WorkerController {
     public String getWorkerInfo(@RequestParam("worker_id") String worker_id)
     {
         return gson.toJson(workers.findById(Long.parseLong(worker_id)));
+    }
+    
+    @PostMapping(path="verifyWorker")
+    public boolean verifyWorker(@RequestParam("workerId") String workerId,
+            @RequestParam("code") String code)
+    {
+        boolean verifyWorkerCode = workers.veryfiyWorkerCode(code, workerId);
+        if(verifyWorkerCode == true)
+        {
+            int x = workers.verifyWorker(code, workerId);
+            if(x > 0)
+            {
+                mailer.sendInfoEmail("post_reg", workerId, "");
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
+        }
+        else
+        {
+            return false;
+        }
     }
    
     
