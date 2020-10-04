@@ -12,5 +12,6 @@ package com.jajitech.agenci.helper;
 public interface Constants {
     
     public final String APP_NAME = "zshift.io";
+    public final String FROM_EMAIL = "smilewithjaji@gmail.com";
     
 }

@@ -12,6 +12,7 @@ import com.jajitech.agenci.helper.Hasher;
 import com.jajitech.agenci.helper.ResponseParser;
 import com.jajitech.agenci.model.WorkerModel;
 import com.jajitech.agenci.repository.WorkerRepository;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,17 +56,24 @@ public class WorkerController {
             @RequestParam("address") String address, @RequestParam("phone") String phone, 
             @RequestParam("photoFile") MultipartFile photoFile, @RequestParam("idtype") String idtype,
             @RequestParam("idnumber") String idnumber,
-            @RequestParam("dob") String dob)
+            @RequestParam("dob") String dob, @RequestParam("agencyId") String agencyId)
     {
+        try
+        {
         actionMessage = "";
         boolean g =  workers.existsByEmail(email);
         if(g == true)
         {
-            return gson.toJson(parser.parseResponse("worker_reg", "A worker with the provided email already exists."));
+            WorkerModel w = new WorkerModel();
+                w.setId((long) 0);
+                w.setAgencyID("error#A worker with the provided email already exists.");
+                return gson.toJson(w);
         }
         
         WorkerModel worker = new WorkerModel();
+        WorkerModel ag = null;
         try{Date date1=new SimpleDateFormat("dd/MM/yyyy").parse(dob);
+        System.out.println(date1);
         worker.setDob(date1);}catch(Exception er){}
         worker.setIdNumber(idnumber);
         worker.setIdType(idtype);
@@ -74,20 +82,21 @@ public class WorkerController {
         worker.setWorkerEmail(email);
         worker.setWorkerPhone(phone);
         worker.setWorkerName(name);
-        worker.setAgencyID("");
+        try{worker.setAgencyID(hasher.hashPassword(agencyId));}catch(Exception er){}
         boolean success = false;
         try
         {
-            WorkerModel ag = workers.save(worker);
+            ag = workers.save(worker);
             savedID = ag.getId()+"";
             success = true;
-            actionMessage = "Worker registered.";
+           ag.setAgencyID("ok#Worker registered.");
             
-        }catch(Exception er){actionMessage = "Error registering worker";}
+        }catch(Exception er){ag.setAgencyID("error#Error registering worker.");}
         if(success == true)
         {
-            System.out.println("its true o");
+            System.out.println("sending mail...");
             String r = mailer.sendVerificationCodeForWorker(savedID);
+            System.out.println("mail outcome: "+r);
         }
         if(success == true && photoFile != null)
         {
@@ -95,33 +104,77 @@ public class WorkerController {
             if(uploaded == true)
             {
                 workers.updatePhoto(savedID);
-                actionMessage = actionMessage + " Photo uploaded";
+                ag.setIsPhotoUploaded(true);
             }
-            else
-            {
-                actionMessage = actionMessage + " Error uploading photo";
-            }
-            return gson.toJson(parser.parseResponse("worker_reg", actionMessage));
+            return gson.toJson(ag);
+        }
+        }
+        catch(Exception er)
+        {
+            er.printStackTrace();
+            WorkerModel w = new WorkerModel();
+                w.setId((long) 0);
+                w.setAgencyID("error#Error registering worker.");
+                return gson.toJson(w);
         }
         return "";
     }
     
-    @PostMapping("setUp")
-    public boolean setUp(@RequestParam("workerId") String workerId,@RequestParam("p") String p)
+    @PostMapping("login")
+    public String LoginWorker(@RequestParam("u") String email, @RequestParam("p") String password)
     {
-        WorkerModel wm = new WorkerModel();
-        
-        try{p = hasher.hashPassword(p);}catch(Exception er){}
-        int x = workers.u_p(p, workerId);
-        if(x > 0)
+        try
         {
-            System.out.println("credentials updated");
-            return true;
+            WorkerModel d = workers.findByEmail(URLDecoder.decode(email, "utf-8"));
+            String v = d.getAgencyID();
+            boolean t = hasher.verifyHash(password, d.getAgencyID());
+            if(t == true)
+            {
+                d.setAgencyID("");
+                return gson.toJson(d);
+            }
+            else
+            {
+                WorkerModel w = new WorkerModel();
+                w.setId((long) 0);
+                System.out.println(gson.toJson(w));
+                return gson.toJson(w);
+            }
         }
-        else
+        catch(Exception er)
         {
-            System.out.println("error updating credentials for worker");
-            return false;
+            WorkerModel w = new WorkerModel();
+            w.setId((long) 0);
+            System.out.println(gson.toJson(w));
+            return gson.toJson(w);
+        }
+    }
+    
+    @PostMapping("setUp")
+    public String setUp(@RequestParam("workerId") String workerId,@RequestParam("p") String p)
+    {
+        try
+        {
+            WorkerModel wm = new WorkerModel();
+            System.out.println(workerId + " "+ p);
+            try{p = hasher.hashPassword(p);}catch(Exception er){}
+            String id = workers.verifyWorkerEmail(URLDecoder.decode(workerId, "utf-8"));
+            int x = workers.u_p(p, id);
+            if(x > 0)
+            {
+                System.out.println("credentials updated");
+                return gson.toJson(parser.parseResponse("u_p", "true"));
+            }
+            else
+            {
+                System.out.println("error updating credentials for worker");
+                return gson.toJson(parser.parseResponse("u_p", "false"));
+            }
+        }
+        catch(Exception er)
+        {
+            er.printStackTrace();
+            return gson.toJson(parser.parseResponse("u_p", "false"));
         }
     }
     
@@ -130,7 +183,7 @@ public class WorkerController {
             @RequestParam("address") String address, @RequestParam("phone") String phone, 
              @RequestParam("idtype") String idtype,
             @RequestParam("idnumber") String idnumber,@RequestParam("id") String id,
-            @RequestParam("dob") String dob, @RequestParam("agencyid") String agencyid)
+            @RequestParam("dob") String dob)
     {
         WorkerModel worker = new WorkerModel();
         try{Date date1=new SimpleDateFormat("dd/MM/yyyy").parse(dob); 
@@ -141,7 +194,7 @@ public class WorkerController {
         worker.setWorkerEmail(email);
         worker.setWorkerPhone(phone);
         worker.setWorkerName(name);
-        worker.setAgencyID(agencyid);
+        //worker.setAgencyID(agencyid);
         worker.setId(Long.parseLong(id));
         try
         {
@@ -202,6 +255,40 @@ public class WorkerController {
         else
         {
             return false;
+        }
+    }
+    
+    @PostMapping(path="sendPassReset")
+    public String sendPassCodeForWorker(@RequestParam("email") String email)
+    {
+        try{email = URLDecoder.decode(email, "utf-8");}catch(Exception er){}
+        WorkerModel wm = workers.findByEmail(email);
+        String id = "";
+        try
+        {
+            id = ""+wm.getId();
+        }
+        catch(Exception er)
+        {
+            String t = gson.toJson(parser.parseResponse("email_verify", "No account associated with email provided"));
+            return t;
+        }
+        
+        if(id == null)
+        {
+            String t = gson.toJson(parser.parseResponse("email_verify", "No account associated with email provided"));
+            System.out.println(t);
+            return t;
+        }
+        String r = mailer.sendPassCodeForWorker(id);
+        System.out.println(r);
+        if(r != null && !r.contains("error"))
+        {
+            return gson.toJson(parser.parseResponse("pass_reset_code", r));
+        }
+        else
+        {
+            return gson.toJson(parser.parseResponse("pass_reset_code", "Error encountered"));
         }
     }
    

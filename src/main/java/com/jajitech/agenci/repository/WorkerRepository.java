@@ -38,6 +38,9 @@ public interface WorkerRepository extends CrudRepository<WorkerModel, Long> {
     @Query(value = "SELECT * from a_worker where s_email=?1", nativeQuery = true)
     WorkerModel findByEmail(String email);
     
+    @Query(value = "SELECT * from a_worker where s_email=?1 and agency_id=?2", nativeQuery = true)
+    WorkerModel login(String email, String pass);
+    
     
     @Query(value = "SELECT id from a_worker where s_email=?1", nativeQuery = true)
     String verifyWorkerEmail(String email);

@@ -5,12 +5,14 @@
  */
 package com.jajitech.agenci.helper;
 
+import com.google.gson.Gson;
 import com.jajitech.agenci.model.AgencyModel;
 import com.jajitech.agenci.model.VerifyWorkerForAgencyModel;
 import com.jajitech.agenci.model.WorkerModel;
 import com.jajitech.agenci.repository.AgencyRepository;
 import com.jajitech.agenci.repository.VerifyWorkerForAgencyRepository;
 import com.jajitech.agenci.repository.WorkerRepository;
+import java.net.URLDecoder;
 import java.util.Optional;
 import javax.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,12 @@ public class Emailer implements Constants{
     @Autowired
     FileReaderHelper reader;
     
+    @Autowired
+    Gson gson;
+    
+    @Autowired
+    ResponseParser parser;
+    
     String path = System.getProperty("user.dir")+"/agenciFiles/mailer/";
     
     public String sendVerificationCodeForAgencyWorker(String agencyID, String workerID)
@@ -69,6 +77,14 @@ public class Emailer implements Constants{
         m.setReceiverName(w.getWorkerName());
         m.setSubject("Verify Your Email For "+a.getAgencyName());
         boolean r = sendEmail(m, agencyID, workerID, v, true, "verify");
+        if(r == true)
+        {
+            return gson.toJson(parser.parseResponse("verif_for_agency_worker", "Email sent"));
+        }
+        else
+        {
+            gson.toJson(parser.parseResponse("verif_for_agency_worker", "Error sending verification email"));
+        }
         return "";
     }
     
@@ -80,25 +96,65 @@ public class Emailer implements Constants{
         v = spaceCode(v);
         body = body.replace("#code#", v);
         body = body.replace("#name#", w.getWorkerName());
-        String contents = "Thank you for registering on the "+APP_NAME" platform."
+        String contents = "Thank you for registering on the "+APP_NAME+" platform."
                 + "To complete the registration process, use the code below "
                 + "to login to the mobile app and set your password.";
         body = body.replace("#body#", contents);
         body = body.replace("#agency#", "Powered By "+APP_NAME);
         body = body.replace("#address#", "");
-        EmailModel m = buildEmailModel("",body,w.getWorkerEmail(),w.getWorkerName(),"Verify Your Email");
+        String ml="";
+        try{ml = URLDecoder.decode(w.getWorkerEmail(), "utf-8");}catch(Exception er){}
+        EmailModel m = buildEmailModel("",body,ml,w.getWorkerName(),"Verify Your Email");
+        try
+        {
         boolean r = sendEmail(m, "", workerID, v, false, "verify");
+        if(r == true)
+        {
+            return gson.toJson(parser.parseResponse("verify_worker", "Email sent"));
+        }
+        else
+        {
+            gson.toJson(parser.parseResponse("verif_for_agency_worker", "Error sending verification email"));
+        }
+        }catch(Exception er){er.printStackTrace();}
         return "";
     }
     
-    public String sendInfoEmail(String type, String workerID, String agencyID)
+    public String sendPassCodeForWorker(String workerID)
+    {
+        String body = reader.readFile(path + "template.jaj");
+        WorkerModel w = worker.getWorkerInfo(workerID);
+        String v = code.randomNumeric(5);
+        String rr = v;
+        v = spaceCode(v);
+        body = body.replace("#code#", v);
+        body = body.replace("#name#", w.getWorkerName());
+        String contents = "You have initiated a password reset process from our app. Please use the code below to continue.";
+        body = body.replace("#body#", contents);
+        body = body.replace("#agency#", "Powered By "+APP_NAME);
+        body = body.replace("#address#", "");
+        EmailModel m = buildEmailModel("",body,w.getWorkerEmail(),w.getWorkerName(),"Verify Your Email");
+        boolean r = sendEmail(m, "", workerID, v, false, "pass_code");
+         if(r == true)
+        {
+            return rr;
+        }
+        else
+        {
+            return "Error sending verification email";
+        }
+    }
+    
+    public boolean sendInfoEmail(String type, String workerID, String agencyID)
     {
         String body = reader.readFile(path + "template.jaj");
         body = body.replace("#code#", "");
-        EmailModel model;
+        EmailModel model = null;
+        String tt = "";
+        boolean val = false;
+        WorkerModel w = worker.getWorkerInfo(workerID);
         if(type.equals("post_agency_verify"))
         {
-            WorkerModel w = worker.getWorkerInfo(workerID);
             AgencyModel a = agency.getAgencyInfo(agencyID);
             body = body.replace("#name#", w.getWorkerName());
             body = body.replace("#agency#", "");
@@ -108,27 +164,40 @@ public class Emailer implements Constants{
             String subject = "You are verified for "+a.getAgencyName();
             body = body.replace("#body#", contents);
             model = buildEmailModel(a.getAgencyName(), body,w.getWorkerEmail(),w.getWorkerName(), subject);
-            boolean r = sendEmail(model, agencyID, workerID, "", true, "info");
+            tt = "info";
+            val = true;
         }
+        
         
         if(type.equals("post_reg"))
         {
-            WorkerModel w = worker.getWorkerInfo(workerID);
             body = body.replace("#name#", w.getWorkerName());
             String contents = "You have been verified on "+APP_NAME+".<p>Thank you.";
             body = body.replace("#body#", contents);
             String subject = "You are verified";
             model = buildEmailModel("", body,w.getWorkerEmail(),w.getWorkerName(), subject);
-            boolean r = sendEmail(model, agencyID, workerID, "", false, "info");
+            tt = "info";
+            val = false;
         }
         
-        
-        return "";
+        if(type.equals("pass_code"))
+        {
+            body = body.replace("#name#", w.getWorkerName());
+            String contents = "You have been verified on "+APP_NAME+".<p>Thank you.";
+            body = body.replace("#body#", contents);
+            String subject = "Password Reset";
+            model = buildEmailModel("", body,w.getWorkerEmail(),w.getWorkerName(), subject);
+            val = false;
+            tt = "pass_code";
+        }
+        boolean r = sendEmail(model, agencyID, workerID, "", val, tt);
+        return r;
     }
     
     private boolean sendEmail(EmailModel model, String agency, String worker, 
             String code, boolean isAgency, String type)
     {
+        boolean success = false;
         MimeMessage m = sender.createMimeMessage();
         try
         {
@@ -137,22 +206,33 @@ public class Emailer implements Constants{
             {
                 Optional<AgencyModel> aa = this.agency.findById(Long.parseLong(agency));
                 AgencyModel a = this.agency.getAgencyInfo(agency);
-                mh.setFrom("smilewithjaji@gmail.com", a.getAgencyName());
+                mh.setFrom(FROM_EMAIL, a.getAgencyName());
                 mh.setReplyTo(a.getAgencyEmail(), a.getAgencyName());
             }
             else
             {
-                mh.setFrom("smilewithjaji@gmail.com", APP_NAME);
+                mh.setFrom(FROM_EMAIL, APP_NAME);
             }
-            mh.setTo(model.getReceiverEmail());
+            String ml = URLDecoder.decode(model.getReceiverEmail(), "utf-8");
+            mh.setTo(ml);
             mh.setSubject(model.getSubject());
             mh.setText(model.getContents(), true);
             ClassPathResource r = new ClassPathResource("logo.png");
             mh.addInline("logo", r);
-            sender.send(m);
-            
-            if(type.equals("verify"))
+            try
             {
+                sender.send(m);
+                success = true;
+            }
+            catch(Exception er)
+            {
+                er.printStackTrace();
+                success = false;
+            }
+            
+            if(type.equals("verify") || type.equals("pass_code") && success == true)
+            {
+                verify.delExisting(worker, agency);
                 VerifyWorkerForAgencyModel vs = new VerifyWorkerForAgencyModel();
                 vs.setIsVerified(false);
                 vs.setVerificationCode(code.replace(" ",""));
@@ -160,13 +240,13 @@ public class Emailer implements Constants{
                 vs.setAgencyID(agency);
                 verify.save(vs);
             }
-            return true;
         }
         catch(Exception er)
         {
             er.printStackTrace();
             return false;
         }
+        return success;
     }
     
     public String spaceCode(String code)

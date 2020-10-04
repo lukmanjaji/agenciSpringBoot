@@ -34,5 +34,10 @@ public interface VerifyWorkerForAgencyRepository extends CrudRepository<VerifyWo
     @Query(value = "update s_verify set s_verified = true where v_code=?1 and s_code=?2 and ag_code=?3 and s_verified = false", nativeQuery = true)
     int verifyWorker(String v_code, String s_code, String ag_code);
     
+    @Transactional
+    @Modifying
+    @Query(value = "delete from s_verify where s_code=?1 and ag_code=?2", nativeQuery = true)
+    int delExisting(String worker, String agency);
+    
     
 }
